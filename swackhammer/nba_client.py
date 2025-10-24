@@ -1,62 +1,56 @@
-"""Thin client helpers around :mod:`nba_api` for fetching player game logs."""
+"""Utilities for fetching NBA player data via ``nba_api``."""
 
 from __future__ import annotations
 
-import logging
-from typing import Any
+import time
+from typing import Dict, Optional
 
-import pandas as pd
-from nba_api.stats.endpoints import playergamelog
-from nba_api.stats.library.parameters import SeasonTypeAllStar
+from nba_api.stats.endpoints import playerdashboardbyyearoveryear
+from nba_api.stats.static import players
 
-from .constants import DEFAULT_SEASON_TYPE
+from .cache import cached
+from .models import PlayerCategoryLine
 
-LOGGER = logging.getLogger(__name__)
+DEFAULT_SEASON = "2024-25"
 
 
-def fetch_player_gamelog(
-    player_id: int,
-    season: str,
-    season_type: str = DEFAULT_SEASON_TYPE,
-    **request_kwargs: Any,
-) -> pd.DataFrame:
-    """Fetch player game logs as a :class:`~pandas.DataFrame`.
+@cached(ttl=24 * 3600)
+def lookup_player_id(full_name: str) -> Optional[int]:
+    matches = players.find_players_by_full_name(full_name)
+    if not matches:
+        return None
+    return matches[0]["id"]
 
-    Parameters
-    ----------
-    player_id:
-        Numeric NBA player identifier.
-    season:
-        NBA season string (e.g., ``"2023-24"``).
-    season_type:
-        Season type accepted by :class:`~nba_api.stats.library.parameters.SeasonTypeAllStar`.
-    **request_kwargs:
-        Additional keyword arguments passed to :class:`~nba_api.stats.endpoints.playergamelog.PlayerGameLog`.
-    """
 
-    _validate_season_type(season_type)
-    LOGGER.info(
-        "Fetching player game log", extra={"player_id": player_id, "season": season, "season_type": season_type}
+@cached(ttl=12 * 3600)
+def fetch_per_game_by_season(player_id: int, season: str = DEFAULT_SEASON) -> PlayerCategoryLine:
+    dash = playerdashboardbyyearoveryear.PlayerDashboardByYearOverYear(
+        player_id=player_id, season=season
+    ).get_dict()
+    # polite pause to avoid hammering the API if caching disabled
+    time.sleep(0.6)
+    datasets = dash["resultSets"]
+    headers = datasets[1]["headers"]
+    rows = datasets[1]["rowSet"]
+    latest = rows[-1]
+    data = dict(zip(headers, latest))
+    return PlayerCategoryLine(
+        PTS=data.get("PTS", 0.0),
+        REB=data.get("REB", 0.0),
+        AST=data.get("AST", 0.0),
+        **{"3PM": data.get("FG3M", 0.0)},
+        STL=data.get("STL", 0.0),
+        BLK=data.get("BLK", 0.0),
+        FGM=data.get("FGM", 0.0),
+        FGA=data.get("FGA", 0.0),
+        FTM=data.get("FTM", 0.0),
+        FTA=data.get("FTA", 0.0),
+        TO=data.get("TOV", 0.0),
     )
 
-    endpoint = playergamelog.PlayerGameLog(
-        player_id=player_id,
-        season=season,
-        season_type_all_star=season_type,
-        **request_kwargs,
-    )
-    data_frames = endpoint.get_data_frames()
-    if not data_frames:
-        raise RuntimeError("playergamelog endpoint returned no data frames")
-    return data_frames[0]
+
+def per_game_category_map(player_id: int, season: str = DEFAULT_SEASON) -> Dict[str, float]:
+    return fetch_per_game_by_season(player_id, season).to_category_map()
 
 
-def _validate_season_type(season_type: str) -> None:
-    """Validate that ``season_type`` is supported by the API."""
-
-    valid = {choice.value for choice in SeasonTypeAllStar}
-    if season_type not in valid:
-        raise ValueError(f"Invalid season_type '{season_type}'. Expected one of: {sorted(valid)}")
-
-
-__all__ = ["fetch_player_gamelog"]
+__all__ = ["DEFAULT_SEASON", "lookup_player_id", "fetch_per_game_by_season", "per_game_category_map"]

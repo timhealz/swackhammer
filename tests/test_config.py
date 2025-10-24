@@ -1,30 +1,24 @@
+import os
+
 import pytest
 
-from swackhammer.config import PipelineConfig
+from swackhammer.config import Settings, get_settings
 
 
-def test_default_season(monkeypatch):
-    monkeypatch.delenv("SEASON", raising=False)
-    monkeypatch.setenv("PLAYER_ID", "201939")
-    monkeypatch.setenv("S3_BUCKET", "bucket")
-    config = PipelineConfig()
-    config.validate()
-    assert config.season.count("-") == 1
+def test_settings_load_from_env(monkeypatch):
+    monkeypatch.setenv("LEAGUE_ID", "12345")
+    monkeypatch.setenv("SEASON_ID", "2026")
+    monkeypatch.setenv("ESPN_S2", "cookie")
+    monkeypatch.setenv("SWID", "{abcd}")
+
+    settings = Settings()
+    assert settings.league_id == 12345
+    assert settings.season_id == 2026
+    assert settings.espn_s2 == "cookie"
+    assert settings.swid == "{abcd}"
 
 
-def test_validation_missing_bucket(monkeypatch):
-    monkeypatch.setenv("PLAYER_ID", "201939")
-    monkeypatch.setenv("SEASON", "2023-24")
-    monkeypatch.delenv("S3_BUCKET", raising=False)
-    config = PipelineConfig()
-    with pytest.raises(ValueError):
-        config.validate()
-
-
-def test_validation_missing_player(monkeypatch):
-    monkeypatch.delenv("PLAYER_ID", raising=False)
-    monkeypatch.setenv("SEASON", "2023-24")
-    monkeypatch.setenv("S3_BUCKET", "bucket")
-    config = PipelineConfig()
-    with pytest.raises(ValueError):
-        config.validate()
+def test_validate_required_missing():
+    settings = Settings()
+    with pytest.raises(Exception):
+        settings.validate_required()

@@ -1,46 +1,53 @@
 # Swackhammer
 
-Swackhammer is a lightweight Python package for fetching NBA player game logs via the
-[`nba_api`](https://github.com/swar/nba_api) client and exporting the results to
-Parquet files in Amazon S3. The package is designed to be run as a scheduled batch
-job (for example, in AWS Batch or AWS Lambda) that keeps a historical log of player
-performance up to date.
+Swackhammer is a Python toolkit for fantasy basketball managers who punt select
+categories. It combines ESPN league data with NBA per-game statistics to help
+you evaluate free agents, identify profitable add/drop swaps, and assemble
+optimized rosters that align with your build.
 
 ## Features
 
-- Thin wrapper around the `playergamelog` endpoint with sensible defaults.
-- Schema-aware transformations that align the output Parquet files with the API
-  response fields.
-- Convenience functions for uploading the result to S3 with `boto3`.
-- Configurable orchestration pipeline that can be invoked from the command line or
-  programmatically.
+- Typed configuration loaded from environment variables or a `.env` file.
+- Lightweight ESPN client helpers for fetching rosters, teams, and free agents.
+- Cached NBA stats lookups using the `nba_api` package.
+- Category-aware scoring utilities for nine-category leagues with punt
+  adjustments.
+- Replacement-value based add/drop recommendations.
+- Linear-programming roster optimizer with optional punt weights.
+- Typer-based CLI for quick access to roster insights.
 
-## Quick start
+## Getting started
 
-```bash
-pip install -e .[dev]
-export PLAYER_ID=201939  # Stephen Curry
-export SEASON=2023-24
-export S3_BUCKET=my-data-bucket
-export S3_PREFIX=nba/player_game_logs
-export AWS_REGION=us-east-1
-swackhammer-run
-```
+1. Install the package and its dependencies:
 
-This command downloads the specified player's game logs, orders the columns to match
-the API schema, and writes a partitioned Parquet file to
-`s3://$S3_BUCKET/$S3_PREFIX/player_id=201939/season=2023-24/playergamelog.parquet`.
+   ```bash
+   pip install -e .[dev]
+   ```
 
-## Configuration
+2. Create a `.env` file in the project root that contains your ESPN cookies and
+   league identifiers:
 
-Configuration values can be supplied either through environment variables or by
-instantiating `swackhammer.config.PipelineConfig` directly. Refer to the module
-docstrings for the full list of options.
+   ```text
+   LEAGUE_ID=123456
+   SEASON_ID=2025
+   ESPN_S2=your_espn_s2_cookie
+   SWID={XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}
+   ```
+
+3. Run the CLI to inspect free agents or generate recommendations:
+
+   ```bash
+   swackhammer free-agents --limit 25
+   swackhammer recommend --punt-ft --punt-to --limit 100
+   ```
+
+   The CLI prints a ranked table of suggested add/drop pairs that maximize your
+   weighted category score.
 
 ## Development
 
+Run the unit tests to validate local changes:
+
 ```bash
-pip install -e .[dev]
 pytest
 ```
-

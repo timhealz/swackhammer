@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "swackhammer"
-version = "0.1.0"
-description = "Utilities for fetching NBA player data and exporting to S3 as Parquet"
+version = "0.2.0"
+description = "Fantasy basketball assistant for ESPN leagues leveraging nba_api stats"
 authors = [{name = "Swackhammer"}]
 readme = "README.md"
-requires-python = ">=3.9"
-keywords = ["nba", "data", "parquet", "s3"]
+requires-python = ">=3.10"
+keywords = ["nba", "fantasy", "espn", "optimizer"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -17,16 +17,26 @@ classifiers = [
 ]
 dependencies = [
     "nba_api>=1.4.1",
+    "espn-api>=0.34.1",
+    "pydantic>=1.10",
     "pandas>=2.0",
-    "pyarrow>=12.0",
-    "boto3>=1.28",
+    "numpy>=1.23",
+    "scipy>=1.10",
+    "pulp>=2.7",
+    "diskcache>=5.4",
+    "python-dotenv>=1.0",
+    "typer[all]>=0.12",
+    "rich>=13.0",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.4", "pytest-mock>=3.10"]
+dev = [
+    "pytest>=7.4",
+    "pytest-mock>=3.10",
+]
 
 [project.scripts]
-swackhammer-run = "swackhammer.pipeline:main"
+swackhammer = "swackhammer.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
