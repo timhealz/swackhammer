@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "swackhammer"
+version = "0.2.0"
+description = "Fantasy basketball assistant for ESPN leagues leveraging nba_api stats"
+authors = [{name = "Swackhammer"}]
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["nba", "fantasy", "espn", "optimizer"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "nba_api>=1.4.1",
+    "espn-api>=0.34.1",
+    "pydantic>=1.10",
+    "pandas>=2.0",
+    "numpy>=1.23",
+    "scipy>=1.10",
+    "pulp>=2.7",
+    "diskcache>=5.4",
+    "python-dotenv>=1.0",
+    "typer[all]>=0.12",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-mock>=3.10",
+]
+
+[project.scripts]
+swackhammer = "swackhammer.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["swackhammer"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
